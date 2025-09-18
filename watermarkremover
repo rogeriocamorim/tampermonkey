@@ -1,0 +1,47 @@
+// ==UserScript==
+// @name         WatermarkRemover: Clear All LocalStorage
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Automatically clear all localStorage entries for watermarkremover.io and its subdomains.
+// @author       You
+// @match        https://watermarkremover.io/*
+// @match        https://*.watermarkremover.io/*
+// @grant        none
+// @run-at       document-start
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    function clearAllStorage() {
+        try {
+            localStorage.clear();
+            console.log("[Tampermonkey] Cleared localStorage for watermarkremover.io");
+        } catch (e) {
+            console.warn("[Tampermonkey] Failed to clear localStorage:", e);
+        }
+    }
+
+    // Clear immediately on script load
+    clearAllStorage();
+
+    // Keep clearing periodically in case the site re-populates storage
+    setInterval(clearAllStorage, 2000);
+
+    // Patch setItem so no new data can persist
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+        console.log(`[Tampermonkey] Blocked localStorage.setItem(${k})`);
+        // either do nothing OR always clear everything again
+        clearAllStorage();
+        return;
+    };
+
+    // Patch removeItem as well just in case
+    const originalRemoveItem = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function (k) {
+        console.log(`[Tampermonkey] Intercepted removeItem(${k})`);
+        clearAllStorage();
+        return;
+    };
+})();
